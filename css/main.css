@@ -1,7 +1,5 @@
 body {
 	font-family:'Helvetica', 'Arial', 'Sans-Serif';
-	width: 60%;
-	align-content: center;
 }
 
 .nav-item {
@@ -21,9 +19,4 @@ footer {
     height: 50px;
     bottom: 0;
     width: 100%;
-}
-
-img {
-	width: 50%;
-	align-self: center;
 }
