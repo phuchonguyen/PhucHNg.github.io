@@ -15,7 +15,7 @@ date: 2018-01-08
 	<img src="https://www.jooq.org/img/sakila.png" alt="Sakila database schema">
 	<p>I installed the database on my local MySQL server following the <a href="https://dev.mysql.com/doc/sakila/en/sakila-installation.html">installation</a> directions. The database can be readily connected to Tableau using <b>Data > New Data Source > Connect To a Server > MySQL</b>. Since the variables I was interested in are stored across different tables, I created a <b>Custom SQL Query</b> to get a single table for this viz. </p>
 
-	<code>SELECT payment.*, customer.first_name, customer.last_name, customer.active, customer.create_date,
+	<pre><code class="language-sql">SELECT payment.*, customer.first_name, customer.last_name, customer.active, customer.create_date,
 address.address, city.city, country.country,
 category.name,
 film.title, film.release_year, film.rental_duration, film.rating,
@@ -39,7 +39,7 @@ INNER JOIN film_category
     ON film.film_id = film_category.film_id
 INNER JOIN category
     ON film_category.category_id = category.category_id
-WHERE customer.active = TRUE</code>
+WHERE customer.active = TRUE</code></pre>
 </div>
 
 <h3>Dashboard</h3>
