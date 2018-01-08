@@ -4,17 +4,19 @@ title: "Tableau Dashboard"
 date: 2018-01-08
 ---
 
-<h2>Visual Report of Sales of A Movie Rental Chain</h2>
+<h2>Visual Report of Sales of A Movie Rental Business</h2>
 <div>
 	<p>In this blog post, I created a dashboard summarizing sales of a fictitious, multi-national movie rental business during 2005-2006 period using Tableau. The dashboard provides a visual tool to answering and communicating questions such as Where are the biggest markets? How much are customers spending and on what movies or genres? Due to the fictitious nature of the data, my goal here is to practice integrating MySQL databases into Tableau, reporting data visually, and publishing dashboards to a website.</p>
 </div>
-
+<br>
 <h3>Data</h3>
 <div>
 	<p>The data used is from MySQL's <a href="https://dev.mysql.com/doc/sakila/en/">Sakila Sample Database</a>. This is a fictitious database of rental history, customers, stores and movies of a movie rental business. Below is a schema of the database from www.jooq.org: </p>
+	<br>
 	<img class="img-fluid" src="https://www.jooq.org/img/sakila.png" alt="Sakila database schema">
+	<br>
 	<p>I installed the database on my local MySQL server following the <a href="https://dev.mysql.com/doc/sakila/en/sakila-installation.html">installation</a> directions. The database can be readily connected to Tableau using <b>Data > New Data Source > Connect To a Server > MySQL</b>. Since the variables I was interested in are stored across different tables, I created a <b>Custom SQL Query</b> to get a single table for this viz. </p>
-
+	<br>
 	<pre><code class="language-sql">
 SELECT payment.*, 
 	customer.first_name, customer.last_name, customer.active,
@@ -42,9 +44,16 @@ INNER JOIN category
     ON film_category.category_id = category.category_id
 WHERE customer.active = TRUE</code></pre>
 </div>
-
+<br>
 <h3>Dashboard</h3>
-
+<br>
+<p>
+	I was interested in viewing sales at different store locations and then looking into more detailed customer spending in the top ten countries. Tableau automatically generates latitudes and longitudes for mapping sales after I assigned <b>Geographic Role</b> to the country variable.
+</p>
+<p>
+	I was also interested in sales for different movie genres
+</p>
+<br>
 <div class="container-fluid">
 <div class='tableauPlaceholder' id='viz1515429033961' style='position: relative'><noscript><a href='https:&#47;&#47;phuchng.github.io&#47;'><img alt=' ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;Sa&#47;SakilaSampleViz&#47;TopPerformers&#47;1_rss.png' style='border: none' /></a></noscript><object class='tableauViz'  style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='' /><param name='name' value='SakilaSampleViz&#47;TopPerformers' /><param name='tabs' value='yes' /><param name='toolbar' value='yes' /><param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;Sa&#47;SakilaSampleViz&#47;TopPerformers&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='filter' value='publish=yes' /></object></div></div>            
 
