@@ -1,15 +1,13 @@
 ---
 layout: default
-title: Phuc Nguyen
+title: "Phuc Nguyen"
 ---
 
-<div>
-	<p>This is my personal website</p>
-</div>
+<h1>{{ page.title }}</h1>
 
-<div>
-	<h3>Posts</h3>
-</div>
-<div>
-	<a href="/sakila-viz.html">Dashboards with Tableau</a>
-</div>
+	<ul class="posts">
+
+	  {% for post in site.posts %}
+	    <li><span>{{ post.date | date_to_string }}</span> » <a href="{{ post.url }}" title="{{ post.title }}">{{ post.title }}</a></li>
+	  {% endfor %}
+	</ul>
