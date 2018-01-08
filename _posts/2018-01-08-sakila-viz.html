@@ -12,14 +12,15 @@ date: 2018-01-08
 <h3>Data</h3>
 <div>
 	<p>The data used is from MySQL's <a href="https://dev.mysql.com/doc/sakila/en/">Sakila Sample Database</a>. This is a fictitious database of rental history, customers, stores and movies of a movie rental business. Below is a schema of the database from www.jooq.org: </p>
-	<img src="https://www.jooq.org/img/sakila.png" alt="Sakila database schema">
+	<img class="img-fluid" src="https://www.jooq.org/img/sakila.png" alt="Sakila database schema">
 	<p>I installed the database on my local MySQL server following the <a href="https://dev.mysql.com/doc/sakila/en/sakila-installation.html">installation</a> directions. The database can be readily connected to Tableau using <b>Data > New Data Source > Connect To a Server > MySQL</b>. Since the variables I was interested in are stored across different tables, I created a <b>Custom SQL Query</b> to get a single table for this viz. </p>
 
-	<pre><code class="language-sql">SELECT payment.*, customer.first_name, customer.last_name, customer.active, customer.create_date,
-address.address, city.city, country.country,
-category.name,
-film.title, film.release_year, film.rental_duration, film.rating,
-film.rental_rate
+	<pre><code class="language-sql">
+		SELECT payment.*, 
+			customer.first_name, customer.last_name, customer.active, customer.create_date,
+			address.address, city.city, country.country,
+			category.name,
+			film.title, film.release_year, film.rental_duration, film.rating, film.rental_rate
 FROM payment 
 INNER JOIN customer
     ON payment.customer_id = customer.customer_id
