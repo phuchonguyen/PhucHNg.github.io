@@ -5,7 +5,11 @@ title: "Phuc Nguyen"
 
 <h1>{{ page.title }}</h1>
 
-	<ul class="posts">
+<p>This is my personal blog on data analytics, visualization, and some programming.</p>
+
+<h3>Posts</h3>
+
+	<ul class="posts top-buffer">
 
 	  {% for post in site.posts %}
 	    <li><span>{{ post.date | date_to_string }}</span> » <a href="{{ post.url }}" title="{{ post.title }}">{{ post.title }}</a></li>
