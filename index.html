@@ -5,7 +5,7 @@ title: "About"
 
 <h1>{{ page.title }}</h1>
 
-<p>This is my personal blog on data analytics, visualization, and some programming.</p>
+<p>This is my personal blog on data analytics and visualization.</p>
 
 <h3>Posts</h3>
 
@@ -14,4 +14,13 @@ title: "About"
 	  {% for post in site.posts %}
 	    <li><span>{{ post.date | date_to_string }}</span> » <a href="{{ post.url }}" title="{{ post.title }}">{{ post.title }}</a></li>
 	  {% endfor %}
+	</ul>
+
+<h3>Other projects</h3>
+
+	<p>Some group projects I did in the past</p>
+
+	<ul class="top-buffer">
+		<li><a href="https://rawgit.com/jinapark22/chicago-crime-bayesian/master/Report.html">Analyzing Crime Trends/Hotspots using Bayesian Statistics</a></li>
+		<li><a href="https://rawgit.com/PhucHNg/sanfran-crime/master/Project_Crime_Report_Final.html">Comparing Crime Categories Predicitions using Different Classifiers</a></li>
 	</ul>
