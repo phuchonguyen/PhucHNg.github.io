@@ -14,10 +14,6 @@ body {
 	margin-bottom:20px; 
 }
 
-header {
-	position: fixed;
-}
-
 footer {
     height: 50px;
     bottom: 0;
