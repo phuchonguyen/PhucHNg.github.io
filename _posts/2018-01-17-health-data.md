@@ -232,7 +232,7 @@ Figure 3: Box plots of prevelance of health measures
 
 Looking at Figure 2, in general, unhealthy behaviors seem more prevelant than chronic diseases. Figure 3 shows in more details that prevelance also differ a lot by the specific health measure. In the health outcome category, prevelance is highest for high cholesterol and high blood pressure among adults, while lack of sleep has highest prevelance in unhealthy behaviors. In preventation, prevelance is lowest for older adult men and women being up to date on core clinical preventative services. (ACCESS2 is lack of access to health insurance.)
 
-### Noticing relationships
+### Identifying trends
 
 In addition to ranking measures of chronical diseases, I want to identify variables that are associated with better health outcome. Since there are many variables in the data, I create a Shiny app to interactively study the relationships between prevelance for measures of chronic diseases and different predictors, particularly hospital performance scores, using scatter plots with a fitted linear regression. I also include an option to control for a second predictor (i.e. demographic variables) which is shown by the points' color. To check the statistical significance of these relationships, I fit a linear regression for measure *i**t**h*'s prevelance according to following formula passed into `lm()`:
 
