@@ -1,8 +1,11 @@
-Better Hospital Quality for Better Health
-=========================================
+---
+layout: post
+title: "Data Exploration with A Shiny App"
+date: 2018-01-17
+---
 
-An Exploratory Analysis
------------------------
+Better Hospital Quality for Better Health
+-----------------------------------------
 
 I want to do an exploratory analysis to see how health outcome is effected by quality of hospitals. Health outcome in this analysis is defined as prevelance of measures of chronic diseases in the 500 Cities dataset, while quality of hosptials is measured according to the Hospital Value-Based Purchasing program's survey. I also incorporate demographic data to control for any difference in ethnicity, income, or age of populations in these 500 cities.
 
@@ -166,12 +169,6 @@ Table 3: Summary statistics for variables of interests
     ##    Weighted Cost Reduction Domain score        1      4.5      6.41      19       8.5            5.8         
     ##           Total Performance score              7     718.6    698.2     1579     500.8          347.1
 
-Figure 1: Histograms showing distribution of each variable
-
-<img src="https://PhucHNg.github.io/images/health_data/histogram.png" width="600">
-
-![](exploratory_files/figure-markdown_github/unnamed-chunk-20-1.png)
-
 Figure 1 shows that distributions of many demographic variables are skewed right and that there are outliners that should be taken into account in more indepth analysis. Measures of quality of hospitals seem to be normally distributed except for Cost Reduction Domain scores, which is skewed right. I apply log and logit transformation to make the demographic variables' distributions more symmetric. Log transformation did not improve Cost Reduction Domain score, so I leave it as is for now. Figure 4 shows that the demographic variables' distributions improve.
 
 ``` r
@@ -180,7 +177,11 @@ Log_Joined_Data <- Joined_Data %>%
   mutate_at(c("median_income"), log)
 ```
 
-#### A closer look at prevelance for measures of chronic diseases
+Figure 1: Histograms showing distribution of each variable
+
+<img src="https://PhucHNg.github.io/images/health_data/histogram.png" width="600">
+
+<br> \#\#\#\#A closer look at prevelance for measures of chronic diseases
 
 Since 500 Cities data set records prevelance of 27 measures of chronic diseases related to three categories: health outcomes, prevention, and unhealthy behaviors.`tbls("measureDesp", display="cite")` shows the ID, description, and category of each measure.
 
