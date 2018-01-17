@@ -1,0 +1,552 @@
+---
+layout: post
+title: "Better Hospital Quality for Better Health"
+date: 2018-01-16
+---
+
+
+```{r, echo=FALSE}
+options(knitr.table.format = "html") 
+```
+
+#An Exploratory Analysis of Health Outcomes and their Relationship to Hospital Quality
+
+I want to do an exploratory analysis of prevelance of different health measures and how they are affected by quality of hospitals. Health outcome in this analysis is defined as prevelance of measures of chronic diseases in the 500 Cities dataset, while quality of hosptials is measured according to the Hospital Value-Based Purchasing program's survey. I also incorporate demographic data to control for any difference in ethnicity, income, or age of populations in these 500 cities. 
+
+###Data source
+
+The data sets used here are from www.data.gov/health/, including:
+
++ **500 Cities: Local Data for Better Health:** includes 2013, 2014 model-based small area estimates (% of prevelence) for 27 measures of chronic disease related to unhealthy behaviors (5), health outcomes (13), and use of preventive services (9) for the 500 largest US cities [1].
+
++ **Hospital Value-Based Purchasing - Total Performance Score (HVBP)** (Fiscal Year 2018): allows you to compare the quality of care at over 4,000 Medicare-certified hospitals across the country based on their Clinical Process of Care domain scores, Patient Experience of Care dimension scores, and Total Performance Scores [2].
+
+Besides the two maiin data sets mentioned above, I want to control for demographic variables in the analysis:
+
++ **Demographics**: from U.S. ACS 5-year 2016 for each city. Variables that might influence health outcome/disease prevelance are median age, proportion of male/female, median income, percent of each race/ethnicity, education attainment. 
+
+I download the 2016 5-year Community Survey Data Profile using the package `censusapi` [3]. As mentioned, I'm interested in getting median household income (api code: DP03_0062E), percent male/female (DP05_0002PE, DP05_0003PE), median age (DP05_0017E), educational attainment measured by percent of population with a high school diploma (DP02_0061PE), percent of each race and ethnicity (DP05_0032PE, DP05_0033PE, DP05_0034PE, DP05_0039PE, DP05_0066PE) for every cities in the U.S. (API name and variable names can be looked up with `listCensusApis()`, `listCensusMetadata()` or from [census.gov](https://www.census.gov/data/developers/data-sets/)). Cities-level demographic information can be obtained by using `place` as the geographic unit. The name of a place contains both state and city information which I can extract using regular expression in R.
+
+```{r, echo=FALSE, warning=FALSE, include=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(censusapi)
+library(knitr)
+library(kableExtra)
+library(DT)
+library(gridExtra)
+library(cowplot)
+library(captioner)
+```
+
+```{r, include=FALSE}
+figs <- captioner(prefix="Figure")
+tbls <- captioner(prefix="Table")
+figs(name="uniHistogram", "Histograms showing distribution of each variable")
+figs(name="boxCat", "Box plots of prevelance of health measure categories")
+figs(name="uniHistogram2", "Histograms showing distribution of each variable after log/logit transformation")
+figs(name="boxMeasure", "Box plots of prevelance of health measures")
+tbls(name="dimData", "Number of variables and data points in each data set")
+tbls(name="health", "Preview of 500 Cities: Local Data for Better Health Data")
+tbls(name="performance", "Preview of Hospital Value-Based Purchasing-Total Performance Score Data")
+tbls(name="demo", "Preview of Demographics Data")
+tbls(name="joinedData", "Preview of joined 500 Cities, HVBP, and Demographics Data")
+tbls(name="statSummary", "Summary statistics for variables of interests")
+tbls(name="measureDesp", "Health measures' IDs, descriptions and categories")
+```
+
+```{r, eval=FALSE}
+# Getting ACS 5 year 2016 data profile
+mycensuskey <- "1e6df3fa695ea39a8969965e90e8fd11dc782b3f"
+myvintage <- 2016
+myapiname <- "acs/acs5/profile"
+
+#percent white, black, native, asian, hispanic (of all race), percent male, percent female, median age, median household income, percent with high school diploma
+interest_vars <- c("NAME","DP05_0032PE","DP05_0033PE","DP05_0034PE","DP05_0039PE", "DP05_0066PE", 
+                   "DP05_0002PE", "DP05_0003PE",
+                   "DP05_0017E",
+                   "DP03_0062E",
+                   "DP02_0061PE")
+interest_vars_names <- c("NAME","state", "place", "percent_white", "percent_black", "percent_native", "percent_asian", "percent_hispanic", "percent_male", "percent_female", "median_age", "median_income", "percent_GED")
+
+#call the census api
+Demographics <- getCensus(name = myapiname, vintage = myvintage, key = mycensuskey, vars = interest_vars, region = "place:*", regionin = "state:*")
+
+#create a variable for state and city by splitting the name of each place
+Demographics <- Demographics %>%
+  `colnames<-`(interest_vars_names) %>%
+  mutate(city = trimws(gsub("city,.*|CDP,.*|town,.*", "", NAME))) %>%
+  mutate(state.abb = trimws(gsub(".*,", "", NAME)))
+```
+
+```{r, echo=FALSE}
+#save(Demographics, file="demographics.Rda")
+```
+
+###Understanding the data
+
+Let's first take a look at the data. 
+
+```{r, warning=FALSE, cache=TRUE}
+# Load 500 Cities data
+Health <- read.csv("500_Cities__Local_Data_for_Better_Health__2017_release.csv")
+
+# Load Hospital Value-Based Purchasing - Total Performance Score data
+Performance <- read.csv("Hospital_Value-Based_Purchasing__HVBP____Total_Performance_Score.csv")
+```
+
+```{r, echo=FALSE}
+# Load demographics
+load("demographics.Rda")
+```
+
+
+
+`r tbls("dimData")`
+
+```{r, echo=FALSE}
+dm <- rbind(dim(Health), dim(Performance), dim(Demographics))
+colnames(dm) <- c("N. observations", "N. variables")
+rownames(dm) <- c("500 Cities", "Hospital Value-Based Purchasing", "Demographics")
+kable(dm) %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+
+`r tbls("health")`
+
+```{r, echo=FALSE, warning=FALSE}
+datatable(head(Health), extensions = 'FixedColumns',
+  options = list(
+  dom = 't',
+  scrollX = TRUE,
+  scrollCollapse = TRUE
+))
+```
+
+
+`r tbls("performance")`
+
+```{r, echo=FALSE, warning=FALSE}
+datatable(head(Performance), extensions = 'FixedColumns',
+  options = list(
+  dom = 't',
+  scrollX = TRUE,
+  scrollCollapse = TRUE
+))
+```
+
+
+`r tbls("demo")`
+
+```{r, echo=FALSE, warning=FALSE}
+datatable(head(Demographics), extensions = 'FixedColumns',
+  options = list(
+  dom = 't',
+  scrollX = TRUE,
+  scrollCollapse = TRUE
+))
+```
+
+`r tbls("dimData", display="cite")` shows that there are many more data points in the HVBP and Demographics data than in 500 Cities. Specifically, there are measurements of performance for several hospitals in each city. I will condense this data table by creating average hospital performance scores (ranging from column eight to sixteen) for each city.
+
+```{r}
+Condensed_Performance <- Performance %>%
+  mutate_at(names(Performance)[8:16], as.numeric) %>%
+  group_by(City, State) %>%
+  summarise_at(names(Performance)[8:16], mean)
+```
+
+Notice that all three datasets contain information on the city level, thus, I join these tables based on a city's name and state, keeping only cities that have data from all tables. (Since 500 Cities and Demographics both have city and unabbriviated state names, I will join these two first and then the Performance data.) 500 Cities contains crude prevelance (number occurances of disease divided by total population) and age-adjusted prevelance (crude prevelance accounted for different age profiles of local population.) I choose to keep only age-adjusted prevelance.
+
+```{r, warning=FALSE}
+Joined_Data <- Health %>% 
+  filter(GeographicLevel=="City", DataValueTypeID=="AgeAdjPrv") %>%
+  mutate_at(c("CityName", "StateDesc"), as.character) %>%
+  inner_join(Demographics, by=c("CityName"="city", "StateDesc" = "state.abb")) %>%
+  mutate(CityName = toupper(CityName)) %>%
+  inner_join(Condensed_Performance, by=c("StateAbbr"="State", "CityName"="City"))
+datatable(head(Joined_Data))
+```
+
+This data is now in a standardized format that can be visualized and analyzed.
+
+```{r, echo=FALSE}
+#write.csv(Joined_Data, file = "HealthData.csv")
+```
+
+###Univariate Analysis
+
+To better understand individual variables, I first look that their summary statistics such as mean, median, standard deviation, and interquantile range.
+
+```{r, echo=FALSE}
+summary(Joined_Data$median_income)
+```
+
+Notice median household income has negative value of -66666666 which is impossible. This indicates missing value. It turns out that Mesquite city in TX has missing median household income. Since this is only one city, I remove this city from the sample.
+
+```{r}
+Joined_Data <- Joined_Data %>%
+  filter(median_income >= 0)
+```
+
+
+`r tbls("statSummary")`
+
+```{r, echo=FALSE}
+col_idx <- c(13, 14, 15, 18, 28:46)
+col_names <- colnames(Joined_Data)[col_idx]
+
+df_summary <- data.frame()
+for (i in col_idx){
+  current_var <- Joined_Data[,i]
+  df_summary <- rbind(df_summary, c(min(current_var), median(current_var), round(mean(current_var), digits = 2), max(current_var), IQR(current_var), round(sd(current_var), digits=2)))
+}
+colnames(df_summary) <- c("min", "median", "mean", "max", "IQR", "standard deviation")
+row_names <- c("Prevelance", "Prevelance low limit", "Prevelance high limit", "Population count",
+                          "Percent white", "Percent black", "Percent native", "Percent asian", "Percent hispanic",
+                          "Percent male", "Percent female", "Median age", "Median household income", "Percent with GED",
+                          "Unweighted Clinical Care Domain score", "Weighted Clinical Care Domain score",
+                          "Unweighted Care Coordination Domain score", "Weighted Care Coordination Domain score",
+                          "Unweighted Safety Domain score", "Weighted Safety Domain score",
+                          "Unweighted Cost Reduction Domain score", "Weighted Cost Reduction Domain score",
+                          "Total Performance score") 
+rownames(df_summary) <- row_names
+```
+
+`r tbls("joinedData")`
+```{r, echo=FALSE}
+datatable(df_summary)
+```
+
+`r figs("uniHistogram")`
+
+```{r, echo=FALSE, warning=FALSE, fig.height=8}
+plots <- list()
+for (i in 1:length(col_idx)) {
+  plots[[i]]<-ggplot(Joined_Data, aes_string(x=col_names[i])) + geom_histogram(aes(y=..density..), binwidth = sd(Joined_Data[,col_idx[i]])/5) + 
+    labs(x=row_names[i])+
+    theme(axis.text = element_text(size=7), axis.title=element_text(size=7))
+}
+plot_grid(plotlist=plots, ncol=4)
+```
+
+`r figs("uniHistogram", display="cite")` shows that distributions of many demographic variables are skewed right and that there are outliners that should be taken into account in more indepth analysis.Measures of quality of hospitals seem to be normally distributed except for Cost Reduction Domain scores, which is skewed right. I apply log and logit transformation to make the demographic variables' distributions more symmetric. Log transformation did not improve Cost Reduction Domain score, so I leave it as is for now. `r figs("uniHistogram2", display="cite")` shows that the demographic variables' distributions improve.
+
+```{r, warning=FALSE}
+Log_Joined_Data <- Joined_Data %>%
+  mutate_at(c("percent_black", "percent_native", "percent_asian", "percent_hispanic"), car::logit) %>%
+  mutate_at(c("median_income"), log)
+```
+
+`r figs("uniHistogram2")`
+
+```{r, echo=FALSE, fig.height=7}
+plots <- list()
+for (i in 1:length(col_idx)) {
+  plots[[i]]<-ggplot(Log_Joined_Data, aes_string(x=col_names[i])) + geom_histogram(aes(y=..density..), binwidth = sd(Log_Joined_Data[,col_idx[i]])/5) +
+    labs(x=row_names[i]) +
+    theme(axis.text = element_text(size=7), axis.title=element_text(size=7))
+}
+plot_grid(plotlist=plots, ncol=4)
+```
+
+####A closer look at prevelance for measures of chronic diseases
+
+Since 500 Cities data set records prevelance of 27 measures of chronic diseases related to three categories: health outcomes, prevention, and unhealthy behaviors.`tbls("measureDesp", display="cite")` shows the ID, description, and category of each measure.
+
+`tbls("measureDesp")`
+
+```{r}
+datatable(data.frame("ID" = Joined_Data$MeasureId[!duplicated(Joined_Data$Measure)], "Measure" = Joined_Data$Measure[!duplicated(Joined_Data$Measure)], "Category" = Joined_Data$Category[!duplicated(Joined_Data$Measure)]))
+```
+
+Box plots can be good visuals to look at the distributions of health outcome for each category. 
+
+`r figs("boxCat")`
+
+```{r, echo=FALSE}
+ggplot(Joined_Data, aes(y=Data_Value, x=Category)) + geom_boxplot(outlier.colour = "red", outlier.shape = 1) +
+  labs(y="Prevelance %")
+```
+
+Similar boxplots can be used to see the prevelance of specific health measures. This will provide detailed information for better understanding of health problems and which deserve higher priority. For easier comparison, I create boxplots sorted by measure's median prevelance from lowest to highest.
+
+```{r, echo=FALSE}
+# Sort levels of measure by median prevelance
+measure_median <- Joined_Data %>%
+  group_by(MeasureId) %>%
+  summarise(med = median(Data_Value))
+order_idx <- sort(measure_median$med, index.return=TRUE)$ix
+sorted_measures <- measure_median$MeasureId[order_idx]
+Joined_Data$MeasureId <- factor(Joined_Data$MeasureId, 
+                                levels = sorted_measures, ordered = TRUE)
+```
+
+`r figs("boxMeasure")`
+
+```{r, echo=FALSE, fig.width=15, fig.height=10}
+ggplot(Joined_Data, aes(x=MeasureId, y=Data_Value)) + geom_boxplot(aes(colour = Category), outlier.colour = "purple", outlier.shape = 1) +
+  labs(y="Prevelance %", x="Measure ID") +
+  facet_grid(.~Category, scales='free_x') +
+  scale_x_discrete(drop=TRUE) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+Looking at `r figs("boxCat", display="cite")`, in general, unhealthy behaviors seem more prevelant than chronic diseases. `r figs("boxMeasure", display="cite")` shows in more details that prevelance also differ a lot by the specific health measure. In the health outcome category, prevelance is highest for high cholesterol and high blood pressure among adults, while lack of sleep has highest prevelance in unhealthy behaviors. In preventation, prevelance is lowest for older adult men and women being up to date on core clinical preventative services. (ACCESS2 is lack of access to health insurance.)
+
+###Bivariate Analysis
+
+In addition to ranking measures of chronical diseases, I want to identify variables that are associated with better health outcome. Since there are many variables in the data, I create a Shiny app to interactively study the relationships between prevelance for measures of chronic diseases and different predictors, particularly hospital performance scores, using scatter plots with a fitted linear regression. I also include an option to control for a second predictor (i.e. demographic variables) which is shown by the points' color.
+To check the statistical significance of these relationships, I fit a linear regression for measure $ith$'s prevelance according to the first equation if one predictor is selected:
+
+$$prevelance_i = \beta_0 + \beta_1*predictor$$
+or the second equation if two predictors are selected:
+
+$$prevelance_i = \beta_0 + \beta_1*predictor_1 + \beta_2*predictor_2 + \beta_3*predictor_1*predictor_2$$
+
+Statistically significant coefficients at the 5% level are highlighted in light yellow.
+
+<iframe src="https://phucnguyen.shinyapps.io/healthviz/" style="border: none;"></iframe>
+
+Higher hospital total performance score is generally significantly associated with higher prevelance in participation in preventative services, lower prevelance in chronic disease outcomes and unhealthy behavior, though the effects are small. When controlling for a demographic variable strongly associated with better health outcomes such as median household income, some associations between better hospital performance score and better health outcome, especially in prevention, become insignificant. Cost reduction, care experience and clinical care score seem to behave similarly. Safety score generally isn't associated with better health outcomes.
+
+###Conclusion
+
+
+###Future Work
+
+- Thera are many outliers in prevelance for measures in chronic diseases as seen in `figs("boxMeasure", display="cite")` , it would be interesting to look at these states in particular and compare their health care policy.
+- Range of different hospital performance measures are different, thus, making it hard to compare the effects of these on prevelance of measures.
+
+###References
+
+1. https://catalog.data.gov/dataset/500-cities-local-data-for-better-health-b32fd
+2. https://catalog.data.gov/dataset/hospital-compare-data-17295
+3. https://www.computerworld.com/article/3120415/data-analytics/how-to-download-new-census-data-with-r.html
+
+###Appendix
+
+Below is the code to generate the tables and figures
+
+`r figs("uniHistogram")`
+
+```{r, eval=FALSE, warning=FALSE, fig.height=8}
+plots <- list()
+for (i in 1:length(col_idx)) {
+  plots[[i]]<-ggplot(Joined_Data, aes_string(x=col_names[i])) + geom_histogram(aes(y=..density..), binwidth = sd(Joined_Data[,col_idx[i]])/5) + 
+    labs(x=row_names[i])+
+    theme(axis.text = element_text(size=7), axis.title=element_text(size=7))
+}
+plot_grid(plotlist=plots, ncol=4)
+```
+
+
+`r figs("boxCat")`
+
+```{r, eval=FALSE}
+ggplot(Joined_Data, aes(y=Data_Value, x=Category)) + geom_boxplot(outlier.colour = "red", outlier.shape = 1) +
+  labs(y="Prevelance %")
+```
+
+
+`r figs("boxMeasure")`
+
+```{r, eval=FALSE, fig.width=15, fig.height=10}
+# Sort levels of measure by median prevelance
+measure_median <- Joined_Data %>%
+  group_by(MeasureId) %>%
+  summarise(med = median(Data_Value))
+order_idx <- sort(measure_median$med, index.return=TRUE)$ix
+sorted_measures <- measure_median$MeasureId[order_idx]
+Joined_Data$MeasureId <- factor(Joined_Data$MeasureId, 
+                                levels = sorted_measures, ordered = TRUE)
+ggplot(Joined_Data, aes(x=MeasureId, y=Data_Value)) + geom_boxplot(aes(colour = Category), outlier.colour = "purple", outlier.shape = 1) +
+  labs(y="Prevelance %", x="Measure ID") +
+  facet_grid(.~Category, scales='free_x') +
+  scale_x_discrete(drop=TRUE) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+Shiny App UI
+
+```{r, eval=FALSE}
+library(shiny)
+
+labels = c("Hospital total performance score" = "Total.Performance.Score",
+           "Hospital cost reduction score" = "Unweighted.Normalized.Efficiency.and.Cost.Reduction.Domain.Score",
+           "Hospital safety score" = "Unweighted.Normalized.Safety.Domain.Score",
+           "Hospital care experience score" = "Unweighted.Patient.and.Caregiver.Centered.Experience.of.Care.Care.Coordination.Domain.Score",
+           "Hospital clinical care score" = "Unweighted.Normalized.Clinical.Care.Domain.Score",
+           "Median income" = "median_income",
+           "Median age" = "median_age",
+           "Educational attainment" = "percent_GED",
+           "Percent white pop." = "percent_white",
+           "Percent black pop." = "percent_black",
+           "Percent asian pop." = "percent_asian",
+           "Percent native pop." = "percent_native",
+           "Percent hispanic pop." = "percent_hispanic")
+
+# Define UI for application that draws a histogram
+shinyUI(fluidPage(
+  
+  # Application title
+  fluidRow(column(10, offset = 1,titlePanel("Predictor of Health Outcomes"))),
+  
+  fluidRow(
+    column(4, offset = 1,
+           # Drop down menus
+           selectInput("pred1", "Select predictor:",
+                       labels, selected = "Hospital total performance score")),
+    column(4,
+           selectInput("pred2", "Select second predictor (optional):",
+                       c("None" = "none", labels), selected = "None"))
+  ),
+  
+  hr(),
+    
+  # Show plots
+  fluidRow(
+    column(10, offset = 1,
+     h4("Plot of relationship between health indicator prevelance and selected predictor(s)"),
+       tabsetPanel(
+         tabPanel("Health Outcomes", plotOutput("plot1")),
+         tabPanel("Preventions", plotOutput("plot2")),
+         tabPanel("Unhealthy Behaviors", plotOutput("plot3"))
+       ) 
+    )
+  ),
+  
+  # Show table
+  fluidRow(
+    column(10, offset = 1,
+       h4("Table of linear regression coefficients"),
+       DT::dataTableOutput("table") 
+    )
+  )
+  
+))
+```
+
+Shiny App Server
+
+```{r, eval=FALSE}
+library(shiny)
+library(ggplot2)
+library(DT)
+library(dplyr)
+
+# Load in our data
+HealthData <- read.csv("./data/HealthData.csv")
+col_idx <- c(7, 13, 14, 15, 18, 21, 28:46)
+HealthData <- HealthData[,col_idx]
+HealthData["none"] <- rep(0, nrow(HealthData)) 
+
+names_map = list(
+  "Total.Performance.Score"="Total performance score",
+  "Unweighted.Normalized.Efficiency.and.Cost.Reduction.Domain.Score"="Cost reduction score",
+  "Unweighted.Normalized.Safety.Domain.Score"="Safety score",
+  "Unweighted.Patient.and.Caregiver.Centered.Experience.of.Care.Care.Coordination.Domain.Score"="Care experience score",
+  "Unweighted.Normalized.Clinical.Care.Domain.Score"="Clinical care score",
+  "median_income"="Median income",
+  "median_age"="Median age",
+  "percent_GED"="Educational attainment",
+  "percent_white"="Percent white",
+  "percent_black"="Percent black",
+  "percent_asian"="Percent asian",
+  "percent_native"="Percent native",
+  "percent_hispanic"="Percent hispanic"
+)
+
+# Define server logic
+shinyServer(function(input, output) {
+   
+  # Draw scatter plots of relationships between Health indicators and selected predictors
+  output$plot1 <- renderPlot({
+    ggplot(HealthData%>% filter(Category=="Health Outcomes"), aes_string(x=input$pred1, y="Data_Value")) + geom_point(aes_string(colour=input$pred2)) +
+      geom_smooth(se=FALSE, method = "lm", colour="red") +
+      labs(y="Prevelance %", x=names_map[[input$pred1]], colour=names_map[[input$pred2]]) +
+      facet_grid(. ~ MeasureId)+
+      theme(axis.text.x = element_text(size=7))
+  })
+  
+  output$plot2 <- renderPlot({
+    ggplot(HealthData%>% filter(Category=="Prevention"), aes_string(x=input$pred1, y="Data_Value")) + geom_point(aes_string(colour=input$pred2)) +
+      geom_smooth(se=FALSE, method = "lm", colour="red") +
+      labs(y="Prevelance %", x=names_map[[input$pred1]], colour=names_map[[input$pred2]]) +
+      facet_grid(. ~ MeasureId)+
+      theme(axis.text.x = element_text(size=7))
+  })
+  
+  output$plot3 <- renderPlot({
+    ggplot(HealthData%>% filter(Category=="Unhealthy Behaviors"), aes_string(x=input$pred1, y="Data_Value")) + geom_point(aes_string(colour=input$pred2)) +
+      geom_smooth(se=FALSE, method = "lm", colour="red") +
+      labs(y="Prevelance %", x=names_map[[input$pred1]], colour=names_map[[input$pred2]]) +
+      facet_grid(. ~ MeasureId)+
+      theme(axis.text.x = element_text(size=7))
+  })
+  
+  # Model the relationships with linear regression for each health measure
+  myModelSummary <- reactive({
+    
+    result_table <- data.frame()
+    
+    # If a second predictor is selected, add an interaction term between the predictors
+    if(input$pred2 != "none"){
+      formula <- as.formula(paste("Data_Value~", input$pred1, "*", input$pred2))
+    }else{
+      formula <- as.formula(paste("Data_Value~", input$pred1))
+    }
+    
+    measures <- levels(HealthData$MeasureId)
+    for(measure in measures){
+      dat <- HealthData %>% filter(MeasureId == measure)
+      
+      mod <- lm(formula, data=dat)
+      n <- dim(coef(summary(mod)))[1]
+      
+      # Create a new row containing coef, std. error, p-value for each predictor
+      new_row <- round(as.vector(t(coef(summary(mod))[2:n, c("Estimate", "Pr(>|t|)")])),8)
+      result_table <- rbind(result_table, new_row)
+    }
+    
+    # Assign row and column names
+    result_table <- cbind(measures, result_table)
+    if(input$pred2 != "none"){
+      colnames(result_table) <- c("Measure",
+                                  paste(names_map[[input$pred1]], " est."), 
+                                  paste(names_map[[input$pred1]], " p-val"),
+                                  paste(names_map[[input$pred2]], " est."), 
+                                  paste(names_map[[input$pred2]], " p-val"), 
+                        "Interaction est.", "Interaction p-val")
+    }else{
+      colnames(result_table) <- c("Measure",paste(names_map[[input$pred1]], " est."), 
+                                  paste(names_map[[input$pred1]], " p-val"))
+    }
+    return(result_table)
+  })
+  
+  # Output a table displaying results of regressions
+  output$table <- DT::renderDataTable({
+    if(input$pred2 == "none"){
+      datatable(myModelSummary(), options = list(pageLength=10))  %>% formatStyle(
+        paste(names_map[[input$pred1]], " p-val"),
+        backgroundColor = styleInterval(0.05, c('lightyellow', 'white'))
+      )
+    }else{
+      datatable(myModelSummary(), options = list(pageLength=10))  %>% formatStyle(
+        paste(names_map[[input$pred1]], " p-val"),
+        backgroundColor = styleInterval(0.05, c('lightyellow', 'white'))
+      ) %>% formatStyle(
+        paste(names_map[[input$pred2]], " p-val"),
+        backgroundColor = styleInterval(0.05, c('lightyellow', 'white'))
+      ) %>% formatStyle(
+        "Interaction p-val",
+        backgroundColor = styleInterval(0.05, c('lightyellow', 'white'))
+      )
+    }
+  })
+  
+})
+```
