@@ -21,7 +21,7 @@ Besides the two maiin data sets mentioned above, I want to control for demograph
 
 -   **Demographics**: from U.S. ACS 5-year 2016 for each city. Variables that might influence health outcome/disease prevelance are median age, proportion of male/female, median income, percent of each race/ethnicity, education attainment.
 
-I download the 2016 5-year Community Survey Data Profile using the package `censusapi` \[3\]. As mentioned, I'm interested in getting median household income (api code: DP03\_0062E), percent male/female (DP05\_0002PE, DP05\_0003PE), median age (DP05\_0017E), educational attainment measured by percent of population with a high school diploma (DP02\_0061PE), percent of each race and ethnicity (DP05\_0032PE, DP05\_0033PE, DP05\_0034PE, DP05\_0039PE, DP05\_0066PE) for every cities in the U.S. (API name and variable names can be looked up with `listCensusApis()`, `listCensusMetadata()` or from [census.gov](https://www.census.gov/data/developers/data-sets/)). Cities-level demographic information can be obtained by using `place` as the geographic unit. The name of a place contains both state and city information which I can extract using regular expression in R.
+I download the 2016 5-year Community Survey Data Profile using the package `censusapi` \[3\]. As mentioned, I'm interested in getting median household income, percent male/female, median age , educational attainment measured by percent of population with a high school diploma , percent of each race and ethnicity for every cities in the U.S. (API name and variable names can be looked up with `listCensusApis()`, `listCensusMetadata()` or from [census.gov](https://www.census.gov/data/developers/data-sets/)). Cities-level demographic information can be obtained by using `place` as the geographic unit. The name of a place contains both state and city information which I can extract using regular expression in R.
 
 ``` r
 # Getting ACS 5 year 2016 data profile
@@ -183,7 +183,7 @@ Figure 1: Histograms showing distribution of each variable
 
 <br> \#\#\#\#A closer look at prevelance for measures of chronic diseases
 
-Since 500 Cities data set records prevelance of 27 measures of chronic diseases related to three categories: health outcomes, prevention, and unhealthy behaviors.`tbls("measureDesp", display="cite")` shows the ID, description, and category of each measure.
+Since 500 Cities data set records prevelance of 27 measures of chronic diseases related to three categories: health outcomes, prevention, and unhealthy behaviors.`r tbls("measureDesp", display="cite")` shows the ID, description, and category of each measure.
 
 Table 4: Health measures' IDs, descriptions and categories
 
@@ -234,7 +234,7 @@ Looking at Figure 2, in general, unhealthy behaviors seem more prevelant than ch
 
 ### Identifying trends
 
-In addition to ranking measures of chronical diseases, I want to identify variables that are associated with better health outcome. Since there are many variables in the data, I create a Shiny app to interactively study the relationships between prevelance for measures of chronic diseases and different predictors, particularly hospital performance scores, using scatter plots with a fitted linear regression. I also include an option to control for a second predictor (i.e. demographic variables) which is shown by the points' color. To check the statistical significance of these relationships, I fit a linear regression for measure *i**t**h*'s prevelance according to following formula passed into `lm()`:
+In addition to ranking measures of chronical diseases, I want to identify variables that are associated with better health outcome. Since there are many variables in the data, I create a Shiny app to interactively study the relationships between prevelance for measures of chronic diseases and different predictors, particularly hospital performance scores, using scatter plots with a fitted linear regression. I also include an option to control for a second predictor (i.e. demographic variables) which is shown by the points' color. To check the statistical significance of these relationships, I fit a linear regression for measure ith's prevelance according to following formula passed into `lm()`:
 
     # With one predictor
     prevelance_i ~ predictor_1
