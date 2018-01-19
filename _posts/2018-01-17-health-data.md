@@ -181,9 +181,11 @@ Figure 1: Histograms showing distribution of each variable
 
 <img src="https://PhucHNg.github.io/images/health_data/histogram.png" width="600">
 
-<br> \#\#\#\#A closer look at prevelance for measures of chronic diseases
+<br> 
 
-Since 500 Cities data set records prevelance of 27 measures of chronic diseases related to three categories: health outcomes, prevention, and unhealthy behaviors.`r tbls("measureDesp", display="cite")` shows the ID, description, and category of each measure.
+#### A closer look at prevelance for measures of chronic diseases
+
+Since 500 Cities data set records prevelance of 27 measures of chronic diseases related to three categories: health outcomes, prevention, and unhealthy behaviors. `r tbls("measureDesp", display="cite")` shows the ID, description, and category of each measure.
 
 Table 4: Health measures' IDs, descriptions and categories
 
